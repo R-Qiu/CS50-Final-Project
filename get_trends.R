@@ -98,14 +98,59 @@ concat_trends <- function(dates_list, terms, locations){
 
 trends <- concat_trends(dates_list, terms, locations)
 
-trends %>% 
+
+# Naive manual correction for Robin Williams-related searches for depression the day following his death (2018-08-12)
+
+trends_RW <- trends
+
+RobWilliams1 <- 
+  trends %>%
+  filter(date >= ymd("2014-08-07") & date <= ymd("2014-08-17")) %>% 
+  filter(date != ymd("2014-08-12")) %>% 
+  summarize(mean = mean(hits)) %>% 
+  pull()
+
+trends_RW[trends$date == ymd("2014-08-12"), "hits"] <- RobWilliams1
+
+RobWilliams2 <- 
+  trends %>%
+  filter(date >= ymd("2014-08-08") & date <= ymd("2014-08-18")) %>% 
+  filter(date != ymd("2014-08-13")) %>% 
+  summarize(mean = mean(hits)) %>% 
+  pull()
+
+
+trends_RW[trends$date == ymd("2014-08-13"), "hits"] <- RobWilliams2
+
+RobWilliams3 <- 
+  trends %>%
+  filter(date >= ymd("2014-08-09") & date <= ymd("2014-08-19")) %>% 
+  filter(date != ymd("2014-08-14")) %>% 
+  summarize(mean = mean(hits)) %>% 
+  pull()
+
+trends_RW[trends$date == ymd("2014-08-14"), "hits"] <- RobWilliams3
+
+
+# Rescale trends to 100
+
+trends_max <-
+  trends_RW %>%
+  summarize(max = max(hits)) %>% 
+  pull()
+  
+trends_rescale <-
+  trends_RW %>% 
+  mutate(hits = hits*100/trends_max)
+
+
+trends_rescale %>% 
   ggplot(aes(x = date, y = hits, color = as.factor(.id))) +
   geom_line() +
   ylim(0, 100) + 
   theme_bw() +
   theme(aspect.ratio = 1/3) + 
   guides(color = FALSE) 
-
 
 
 
