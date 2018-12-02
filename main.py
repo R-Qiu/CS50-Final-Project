@@ -112,89 +112,43 @@ cloudCover.set_index(df.index, inplace=True, drop=True)
 # Find mean of daily data
 cloudCover_daily = cloudCover.resample('D').mean()
 cloudCover_daily.reset_index(inplace = True, drop=True)
+
+# Drop the Nan extra row
 cloudCover_daily.drop(cloudCover_daily.index[-1], inplace = True)
 
 # Compile all features into a feature dataframe
 features = pd.concat([tempRange, tempAve, SunTime, windSpeed, DAILYPrecip, weatherEncoded, cloudCover_daily], axis=1)
-print(features)
 
 
+from sklearn.model_selection import StratifiedKFold
+from keras.models import Sequential
+from keras.layers import Dense, Activation
 
+# Split training (8 years) and testing data (last 2 years)
+X_train = features.iloc[:2922]
+X_test = features.tail(730)
 
-# Split DailyWeather into 4 columns (max description)
-# split = SOD['DAILYWeather'].str.split(" ", n = 3, expand = True)
-# print(split)
-# print(type(split))
+# define 5-fold cross validation test
+kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=250)
 
-# # Fill all None with Nan
-# split.fillna(value=pd.np.nan, inplace=True)
-#
-# category1 = pd.get_dummies(split[0])
-# category2 = pd.get_dummies(split[1])
-# category3 = pd.get_dummies(split[2])
-# category4 = pd.get_dummies(split[3])
-#
-# print(category1)
-# print(category2)
-# category1.join(category2, all = True)
-# print(category1)
-#
-# # first combine the splits into one long list
-# combine = pd.concat([split[0], split[1], split[2], split[3]], axis=0)
-# combineDF = pd.DataFrame({combine.index, combine})
-# # combine.reset_index(inplace=True, drop=True)
-#
-# print(type(combine))
-# category = pd.get_dummies()
-# print(category)
+# define base model
+def baseline_model():
+    # create model
+    model = Sequential()
+    model.add(Dense(5, input_dim=27, init= 'uniform' , activation= 'relu' ))
+    model.add(Dense(5, init= 'uniform' ))
+    # Compile model
+    model.compile(loss= 'mean_squared_error' , optimizer= 'adam' )
+    return model
 
-# # Integer Encode the long list
-# label_encoder = LabelEncoder()
-# integer_encoded = label_encoder.fit(combine.astype(str))
-# print(label_encoder.classes_)
-#
-# # Binary encode the long list
-# onehot_encoder = OneHotEncoder(sparse=False)
-# integer_encoded = integer_encoded.reshape(len(integer_encoded), 1)
-# onehot_encoded = onehot_encoder.fit_transform(integer_encoded)
+# fix random seed for reproducibility
+seed = 7
+numpy.random.seed(seed)
 
-# # Split back into 5 different arrays and sum them to get one hot encoding
-# result = numpy.split(onehot_encoded, 5)
-# finalResult = result[0] + result[1] + result[2] + result[3] + result[4]
-#
-# # Delete Nan Column (last column)
-# finalResult = numpy.delete(finalResult, -1, axis=1)
-# print(finalResult)
-# print(finalResult.shape)
-
-
-# new_result = numpy.add(result[0], result[1], result[2], result[3], result[4])
-
-# combine = pd.concat([split[0], split[1], split[2], split[3], split[4]])
-# label_encoder = LabelEncoder()
-# SOD[] = label_encoder.fit_transform(combine)
-
-# label encode the combined series to ensure eveything is encoded
-# one hot transform each split individually
-# add the one hot encoded together
-# 0 1 0 1 0...etc. (sample)
-
-
-
-
-
-#
-# onehot = pd.get_dummies(SOD['DAILYWeather'], prefix=['type'])
-# print(onehot)
-
-# selected = grouped[['DAILYWeather','DAILYPrecip', 'DAILYAverageDryBulbTemp',
-#                     ]]
-
-
-
-
-
-
-
-
+# evaluate model with standardized dataset
+estimators = []
+estimators.append(( standardize , StandardScaler()))
+estimators.append(( mlp , KerasRegressor(build_fn=baseline_model, nb_epoch=50,
+batch_size=5, verbose=0)))
+pipeline = Pipeline(estimators)
 
