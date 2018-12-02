@@ -31,18 +31,22 @@ df.index = pd.to_datetime(df.index)
 
 # Temperature (range, average, standard deviation)
 tempRange = SOD['DAILYMaximumDryBulbTemp'] - SOD['DAILYMinimumDryBulbTemp']
+tempRange = pd.Series(tempRange, name='tempRange')
+tempRange.reset_index(inplace = True, drop=True)
 
-tempAve = df['DAILYAverageDryBulbTemp']
+tempAve = pd.Series(SOD['DAILYAverageDryBulbTemp'], name='tempAve')
+tempAve.reset_index(inplace = True, drop=True)
 
-grouped_std = df.resample('D').std()
-print(grouped_std)
-tempSD = grouped_std['HOURLYWETBULBTEMPF']
+# grouped_std = df.resample('D').std()
+# tempSD['tempSD'] = grouped_std['HOURLYWETBULBTEMPF']
 
 # Find Sun time in minutes
 DAILYSunrise = pd.to_datetime(SOD['DAILYSunrise'], format='%H%M')
 DAILYSunset = pd.to_datetime(SOD['DAILYSunset'], format='%H%M')
 SunTime = DAILYSunset - DAILYSunrise
 SunTime = SunTime.dt.total_seconds() / 60
+SunTime = pd.Series(SunTime, name='SunTime')
+SunTime.reset_index(inplace = True, drop=True)
 
 # Visibility (average and standard deviation)
 # grouped_ave =  df.groupby(df.index.day).mean()
@@ -54,10 +58,13 @@ SunTime = SunTime.dt.total_seconds() / 60
 # print(m)
 
 # Wind Speed
-windSpeed = SOD['DAILYAverageWindSpeed']
+windSpeed = pd.Series(SOD['DAILYAverageWindSpeed'], name='windSpeed')
+windSpeed.reset_index(inplace = True, drop=True)
 
 # Amount of Precipitation
-DAILYPrecip = SOD['DAILYPrecip']
+DAILYPrecip = pd.Series(SOD['DAILYPrecip'], name='precipAmount')
+DAILYPrecip.replace('T', 0, inplace=True)
+DAILYPrecip.reset_index(inplace = True, drop=True)
 
 # Find Precipitation type using one hot encoding
 weatherTypes = {'FG:01':[], 'FG+:02':[], 'TS:03':[], 'PL:04':[], 'GR:05':[], 'GL:06':[],
@@ -72,12 +79,12 @@ for word in DAILYWeather:
         result = word.find(key)
         weatherTypes[key].append(1 if result != -1 else 0)
 
-encoded = pd.DataFrame.from_dict(weatherTypes)
+weatherEncoded = pd.DataFrame.from_dict(weatherTypes)
 
 # Cloud Cover extraction
 # Convert Skycondition data from dataframe into a list
 cloudCondition = df['HOURLYSKYCONDITIONS'].tolist()
-
+print(cloudCondition)
 # Parse all elements into type string
 cloudCondition = [str(i) for i in cloudCondition]
 
@@ -86,7 +93,7 @@ conditionExtracted = {'cloudCover':[]}
 
 for condition in cloudCondition:
     # Extract the cloud cover number using regular expression on a string
-    matchObj = re.search( r'\d\d\s\d*$', condition, re.M|re.I)
+    matchObj = re.search( r'\d\d\s\d*$', condition)
     # If data is not null, append the first 2 characters (i.e '02') into the dictionary
     if matchObj:
         foundString = matchObj.group()
@@ -94,7 +101,7 @@ for condition in cloudCondition:
     # If null, append '0'
     else:
         conditionExtracted['cloudCover'].append('0')
-
+print(len(conditionExtracted))
 # Convert dict into dataframe and turn values from string into float
 cloudCover = pd.DataFrame.from_dict(conditionExtracted)
 cloudCover['cloudCover'] = cloudCover['cloudCover'].astype(float)
@@ -104,6 +111,13 @@ cloudCover.set_index(df.index, inplace=True, drop=True)
 
 # Find mean of daily data
 cloudCover_daily = cloudCover.resample('D').mean()
+cloudCover_daily.reset_index(inplace = True, drop=True)
+
+# Compile all features into a feature dataframe
+features = pd.concat([tempRange, tempAve, SunTime, windSpeed, DAILYPrecip, weatherEncoded, cloudCover_daily], axis=1)
+print(features)
+
+
 
 
 # Split DailyWeather into 4 columns (max description)
