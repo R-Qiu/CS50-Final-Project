@@ -20,7 +20,7 @@ get_dates_list <- function(date_range, dates_sep=months(3), date_overlap=months(
     interval_end <- temp_date %m+% dates_sep
     interval_str <- paste(interval_start, interval_end)
     
-    dates_list <- append(dates_list, list(interval_str, interval_start, interval_end))
+    dates_list <- list.append(dates_list, list(interval_str, interval_start, interval_end))
     temp_date <- temp_date %m+% dates_sep %m-% date_overlap 
     
     # Breaks out of loop if temp_date has passed the upper date bound
@@ -41,9 +41,7 @@ concat_trends <- function(dates_list, terms, locations, rescale_robin_williams=F
   # Initializes trends with the first date interval
   trends <- 
     gtrends(keyword = terms, geo = locations, time = dates_list[[1]][[1]])[[1]] %>% 
-    as.tibble() %>% 
-    mutate(.id = 1,
-           date_range = dates_list[[i]][[1]])
+    as.tibble()
   
   # Iterates over date intervals
   for (i in 2:length(dates_list)){
@@ -51,9 +49,7 @@ concat_trends <- function(dates_list, terms, locations, rescale_robin_williams=F
     # Grabs trends data for specified time range, location, and search terms
     trend <- 
       gtrends(keyword = terms, geo = locations, time = dates_list[[i]][[1]])[[1]] %>% 
-      as.tibble() %>% 
-      mutate(.id = i,
-             date_range = dates_list[[i]][[1]])
+      as.tibble()
     
     # Calculates mean hits of older side left side of trends data for overlapping dates
     mean_old <-

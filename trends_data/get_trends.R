@@ -9,7 +9,7 @@ library(rlist)
 library(tidyverse)
 
 # Import functions from helpers.R
-source("helpers.R")
+source("trends_data/helpers.R")
 
 
 # Define Google Trends parameters
@@ -17,8 +17,8 @@ terms <- c("depression")
 locations <- c("US-NY-501")
 date_range <- "2008-01-01 2017-12-31"
 
-# Define output filename
-filename <- "NYC_gtrends_2008-2017.csv"
+# Define output path and filename
+outpath <- "trends_data/NYC_gtrends_2008-2017.csv"
 
 # Get list of date intervals
 dates_list <- get_dates_list(date_range)
@@ -27,15 +27,6 @@ dates_list <- get_dates_list(date_range)
 trends <- concat_trends(dates_list, terms, locations, rescale_robin_williams=TRUE)
 
 # Writes out CSV file of Google Trends data
-write_csv(trends, filename)
-
-
-
-
-
-
-
-
-
+write_csv(trends, outpath)
 
 
