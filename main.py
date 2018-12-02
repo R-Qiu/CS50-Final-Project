@@ -84,7 +84,7 @@ weatherEncoded = pd.DataFrame.from_dict(weatherTypes)
 # Cloud Cover extraction
 # Convert Skycondition data from dataframe into a list
 cloudCondition = df['HOURLYSKYCONDITIONS'].tolist()
-print(cloudCondition)
+
 # Parse all elements into type string
 cloudCondition = [str(i) for i in cloudCondition]
 
@@ -101,7 +101,7 @@ for condition in cloudCondition:
     # If null, append '0'
     else:
         conditionExtracted['cloudCover'].append('0')
-print(len(conditionExtracted))
+
 # Convert dict into dataframe and turn values from string into float
 cloudCover = pd.DataFrame.from_dict(conditionExtracted)
 cloudCover['cloudCover'] = cloudCover['cloudCover'].astype(float)
@@ -112,6 +112,7 @@ cloudCover.set_index(df.index, inplace=True, drop=True)
 # Find mean of daily data
 cloudCover_daily = cloudCover.resample('D').mean()
 cloudCover_daily.reset_index(inplace = True, drop=True)
+cloudCover_daily.drop(cloudCover_daily.index[-1], inplace = True)
 
 # Compile all features into a feature dataframe
 features = pd.concat([tempRange, tempAve, SunTime, windSpeed, DAILYPrecip, weatherEncoded, cloudCover_daily], axis=1)
