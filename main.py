@@ -123,6 +123,8 @@ features = pd.concat([tempRange, tempAve, SunTime, windSpeed, DAILYPrecip, weath
 from sklearn.model_selection import StratifiedKFold
 from keras.models import Sequential
 from keras.layers import Dense, Activation
+from keras.layers.normalization import BatchNormalization
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 # Split training (8 years) and testing data (last 2 years)
 X_train = features.iloc[:2922]
@@ -131,15 +133,34 @@ X_test = features.tail(730)
 # define 5-fold cross validation test
 kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=250)
 
-# define base model
-def baseline_model():
-    # create model
+i = 0
+for train, test in kfold.split(X, Y):
+    # Creating the Neural Network:
     model = Sequential()
-    model.add(Dense(5, input_dim=27, init= 'uniform' , activation= 'relu' ))
-    model.add(Dense(5, init= 'uniform' ))
-    # Compile model
-    model.compile(loss= 'mean_squared_error' , optimizer= 'adam' )
-    return model
+    model.add(Dense(5, input_dim=27, kernel_initializer='uniform'))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+
+    model.add(Dense(5, kernel_initializer='uniform'))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+
+    # Compiling the Model:
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+    # Creating Callback function:
+    mcp = ModelCheckpoint(filepath="final_model_fold" + str(i) + "_weights.h5", monitor='val_loss', save_best_only=True, mode='min', verbose=1)
+    # es = EarlyStopping(monitor='val_loss', min_delta=0, patience=30, verbose=0, mode='auto')
+
+    # Fit the model
+    history = model.fit(X_train_final, Y[train], validation_data=(X_test_final, Y[test]), nb_epoch=200, batch_size=3,
+                        callbacks=[mcp], verbose=0)
+
+    # load weights
+    model.load_weights("final_model_fold" + str(i) + "_weights.h5")
+    # Compiling the Model:
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    prediction = model.predict(X_test_final)
 
 # fix random seed for reproducibility
 seed = 7
