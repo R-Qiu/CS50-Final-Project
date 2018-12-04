@@ -131,6 +131,10 @@ from sklearn.pipeline import Pipeline
 from keras.wrappers.scikit_learn import KerasRegressor
 from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import explained_variance_score
 
 # Load Google trends data as labels
 gtrend = pd.read_csv('/Users/apple/PycharmProjects/CS50-Final-Project/trends_data/NYC_gtrends_2008-2017.csv')
@@ -139,77 +143,106 @@ gtrend = gtrend.loc[gtrend['date'] <= '2017-12-31']
 gtrend = gtrend['hits']
 gtrend.apply(pd.to_numeric)
 
-
 # Split training (8 years) and testing data (last 2 years)
 X = features.iloc[:2922]
 X_test = features.tail(730)
+X = X.values
+X_test = X_test.values
 
 Y = gtrend.iloc[:2922]
 Y_test = gtrend.tail(730)
+Y = Y.values
+Y_test = Y_test.values
 
-# def baseline_model():
-# 	# create model
-# 	model = Sequential()
-# 	model.add(Dense(13, input_dim=27, kernel_initializer='normal', activation='relu'))
-# 	model.add(Dense(1, kernel_initializer='normal'))
-# 	# Compile model
-# 	model.compile(loss='mean_squared_error', optimizer='adam')
-# 	return model
+
+# create model
+model = Sequential()
+model.add(Dense(10, input_dim=27, kernel_initializer='normal', activation='relu'))
+model.add(Dense(10, kernel_initializer='normal', activation='relu'))
+model.add(Dense(1, kernel_initializer='normal'))
+# Compile model
+model.compile(loss='mean_squared_error', optimizer='adam')
+
+mcp = ModelCheckpoint(filepath="model_fold_weights.h5", monitor='val_loss', save_best_only=True, mode='min', verbose=1)
+
+# Fit the model
+history = model.fit(X, Y, validation_split=0.20, nb_epoch=40, batch_size=10, callbacks=[mcp], verbose=0)
+
+# summarize history for accuracy
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'test' ], loc= 'upper left')
+plt.show()
+
+# load weights
+model.load_weights("model_fold_weights.h5")
+# Compiling the Model:
+model.compile(loss='mean_squared_error', optimizer='adam')
+prediction = model.predict(X_test)
+
+r2 = r2_score(Y_test, prediction)
+MSE = mean_squared_error(Y_test, prediction)
+exp_var = explained_variance_score(Y_test, prediction)
+print(r2)
+print(MSE)
+print(exp_var)
+
+plt.plot(prediction)
+plt.plot(Y_test)
+plt.show()
+
+
+# # define 5-fold cross validation test
+# kfold = KFold(n_splits=5)
 #
-# # fix random seed for reproducibility
-# seed = 7
-# numpy.random.seed(seed)
-# # evaluate model with standardized dataset
-# estimator = KerasRegressor(build_fn=baseline_model, epochs=10, batch_size=50, verbose=0)
+# i = 0
+# for train, validate in kfold.split(X):
+#     X_train = X.iloc[train]
+#     X_validate = X.iloc[validate]
 #
-# kfold = KFold(n_splits=2, random_state=seed)
-# results = cross_val_score(estimator, X, Y, cv=kfold)
-# print("Results: %.2f (%.2f) MSE" % (results.mean(), results.std()))
-
-# define 5-fold cross validation test
-kfold = KFold(n_splits=5)
-
-i = 0
-for train, validate in kfold.split(X):
-    X_train = X.iloc[train]
-    X_validate = X.iloc[validate]
-
-    Y_train = Y.iloc[train]
-    Y_validate = Y.iloc[validate]
-
-    # Creating the Neural Network:
-    model = Sequential()
-    model.add(Dense(3, input_dim=27, kernel_initializer='uniform'))
-    model.add(Activation('relu'))
-
-    model.add(Dense(3, kernel_initializer='uniform'))
-    model.add(Activation('relu'))
-
-    model.add(Dense(1, kernel_initializer='uniform'))
-    model.add(Activation('relu'))
-
-    # Compiling the Model:
-    model.compile(loss='mean_squared_error', optimizer='adam')
-
-    # Creating Callback function:
-    mcp = ModelCheckpoint(filepath="model_fold" + str(i) + "_weights.h5", monitor='val_loss', save_best_only=True, mode='min', verbose=1)
-    # es = EarlyStopping(monitor='val_loss', min_delta=0, patience=30, verbose=0, mode='auto')
-
-    # Fit the model
-    history = model.fit(X_train, Y_train, validation_data=(X_validate, Y_validate), nb_epoch=10, batch_size=50,
-                        callbacks=[mcp], verbose=1)
-
-    # load weights
-    model.load_weights("model_fold" + str(i) + "_weights.h5")
-    # Compiling the Model:
-    model.compile(loss='mean_squared_error', optimizer='adam')
-    prediction = model.predict(X_validate)
-
-    print('fold: %d' % i)
-    print(prediction)
-    print(Y_validate)
-
-    i += 1
+#     Y_train = Y.iloc[train]
+#     Y_validate = Y.iloc[validate]
+#
+#     # Creating the Neural Network:
+#     model = Sequential()
+#     model.add(Dense(5, input_dim=5, kernel_initializer='normal'))
+#     model.add(Activation('relu'))
+#
+#     # model.add(Dense(3, kernel_initializer='normal'))
+#     # model.add(Activation('relu'))
+#
+#     model.add(Dense(1, kernel_initializer='uniform'))
+#
+#     # Compiling the Model:
+#     model.compile(loss='mean_squared_error', optimizer='adam')
+#
+#     # Creating Callback function:
+#     mcp = ModelCheckpoint(filepath="model_fold_weights.h5", monitor='val_loss', save_best_only=True, mode='min', verbose=1)
+#     # es = EarlyStopping(monitor='val_loss', min_delta=0, patience=30, verbose=0, mode='auto')
+#
+#     # Fit the model
+#     history = model.fit(X_train, Y_train, validation_data=(X_validate, Y_validate), nb_epoch=100, batch_size=20,
+#                         callbacks=[mcp], verbose=1)
+#
+#     # # summarize history for accuracy
+#     # plt.plot(history.history['loss'])
+#     # plt.plot(history.history['val_loss'])
+#     # plt.show()
+#
+#     # load weights
+#     model.load_weights("model_fold_weights.h5")
+#     # Compiling the Model:
+#     model.compile(loss='mean_squared_error', optimizer='adam')
+#     prediction = model.predict(X_validate)
+#
+#     print('fold: %d' % i)
+#     print(prediction)
+#     print(Y_validate)
+#
+#     i += 1
 
     # # Compute ROC curve and area the curve
     # fpr, tpr, thresholds = roc_curve(Y[test], prediction[:, 0])
