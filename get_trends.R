@@ -9,16 +9,17 @@ library(rlist)
 library(tidyverse)
 
 # Import functions from helpers.R
-source("trends_data/helpers.R")
+source("helpers.R")
 
 
 # Define Google Trends parameters
+# List of locations available in trends_data/locations.txt
 terms <- c("depression")
-locations <- c("US-NY-501")
+locations <- c("US-MD-512")
 date_range <- "2008-01-01 2017-12-31"
 
 # Define output path and filename
-outpath <- "trends_data/NYC_gtrends_2008-2017.csv"
+outpath <- "trends_data/baltimore_gtrends_2008-2017.csv"
 
 # Get list of date intervals
 dates_list <- get_dates_list(date_range)
