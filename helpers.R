@@ -118,7 +118,7 @@ concat_trends <- function(dates_list, terms, locations, rescale_robin_williams=F
   if (rescale_robin_williams) {
     
     # Used even-weight 7-day window for rolling mean correction for 1 week before and after day of death
-    trends_RW <-
+    trends <-
       trends %>% 
       mutate(moving_average = roll_mean(hits, 7, align = "center", fill = 0)) %>% 
       mutate(hits = case_when(date > ymd("2014-08-04") & date < ymd("2014-08-19") ~ moving_average,
@@ -128,22 +128,19 @@ concat_trends <- function(dates_list, terms, locations, rescale_robin_williams=F
 
     # Rescale trends to 100
     trends_max <-
-      trends_RW %>%
+      trends %>%
       summarize(max = max(hits)) %>% 
       pull()
     
-    trends_rescale <-
-      trends_RW %>% 
+    trends <-
+      trends %>% 
       mutate(hits = hits*100/trends_max)
+
     
-    # Return rescaled trends
-    trends_rescale
+  } 
     
-  } else {
+  # Return trends tibble
+  trends
     
-    # Otherwise, return original tibble
-    trends
-    
-  }
   
 }
