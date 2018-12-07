@@ -120,7 +120,7 @@ concat_trends <- function(dates_list, terms, locations, rescale_robin_williams=F
     # Used even-weight 11-day window for rolling mean correction for 1 week before and after day of death
     trends <-
       trends %>% 
-      mutate(moving_average = roll_mean(hits, 13, align = "center", fill = 0)) %>% 
+      mutate(moving_average = roll_mean(hits, 11, align = "center", fill = 0)) %>% 
       mutate(hits = case_when(date > ymd("2014-08-04") & date < ymd("2014-08-19") ~ moving_average,
                               TRUE ~ hits)) %>% 
       select(-moving_average)
