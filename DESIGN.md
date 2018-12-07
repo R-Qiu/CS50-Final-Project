@@ -23,7 +23,7 @@ This process is then iterated (but now between the old, growing dataset and a fr
 
 Notably, there is an extremely disproportionate spike in Google searches for “depression” the day following Robin Williams death. Presumably, this is because Robin Williams’ death, combined with his depression, massively publicized depression in the US, and not because more people were actually depressed. 
 
-Thus, since we were using depression searches as a proxy for depression rates, `concat_trends()` contains an option to correct for this effect by replacing the hits for the dates within a 7-day radius of Robin Williams’ death with a 7-day rolling average of hits, resulting in a reasonably smooth curve in that area, sans “Robin Williams Effect”. 
+Thus, since we were using depression searches as a proxy for depression rates, `concat_trends()` contains an option to correct for this effect by replacing the hits for the dates within a 7-day radius of Robin Williams’ death with an 11-day rolling average of hits, resulting in a reasonably smooth curve in that area, sans “Robin Williams Effect”. 
 
 
 ### Google Trends Data Smoothing
