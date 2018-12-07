@@ -117,10 +117,10 @@ concat_trends <- function(dates_list, terms, locations, rescale_robin_williams=F
   # Correcting for Robin Williams-related searches the day following his death (2018-08-12)
   if (rescale_robin_williams) {
     
-    # Used even-weight 7-day window for rolling mean correction for 1 week before and after day of death
+    # Used even-weight 11-day window for rolling mean correction for 1 week before and after day of death
     trends <-
       trends %>% 
-      mutate(moving_average = roll_mean(hits, 7, align = "center", fill = 0)) %>% 
+      mutate(moving_average = roll_mean(hits, 13, align = "center", fill = 0)) %>% 
       mutate(hits = case_when(date > ymd("2014-08-04") & date < ymd("2014-08-19") ~ moving_average,
                               TRUE ~ hits)) %>% 
       select(-moving_average)
