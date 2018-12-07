@@ -9,7 +9,7 @@ A brief presentation which graphically depicts these methods as well as results 
 
 
 ## Prerequisites
-**R Libraries:**
+**R Libraries (R Version >= 3.5.0):**
 
 * `Lubridate`
 
@@ -22,7 +22,7 @@ A brief presentation which graphically depicts these methods as well as results 
 * `RcppRoll`
 
 
-**Python Packages (Python >= 3.6):**
+**Python Packages (Python Version >= 3.6):**
 
 * `Scikit-Learn`
 
