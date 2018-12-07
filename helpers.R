@@ -3,7 +3,7 @@
 # helpers.R defines the functions used in get_trends.R
 
 # Takes in pair of dates, outputs list of lists with overlapping date ranges
-get_dates_list <- function(date_range, dates_sep=months(3), date_overlap=months(1)){
+get_dates_list <- function(date_range, dates_sep=months(3), date_overlap=months(1)) {
   
   # Breaks date range into two dates and converts them to date format
   dates <- str_split(date_range, " ")[[1]] %>% ymd()
@@ -13,7 +13,7 @@ get_dates_list <- function(date_range, dates_sep=months(3), date_overlap=months(
   dates_list <- list()
   
   # Appends to list of dates until past date range provided
-  repeat{
+  repeat {
     
     # Calculates beginning and end of interval
     interval_start <- temp_date
@@ -36,20 +36,38 @@ get_dates_list <- function(date_range, dates_sep=months(3), date_overlap=months(
 
 
 # Concatenates Google trend data with overlap, scaling appropriately
-concat_trends <- function(dates_list, terms, locations, rescale_robin_williams=FALSE){
+concat_trends <- function(dates_list, terms, locations, rescale_robin_williams=FALSE) {
   
   # Initializes trends with the first date interval
   trends <- 
     gtrends(keyword = terms, geo = locations, time = dates_list[[1]][[1]])[[1]] %>% 
     as.tibble()
   
+
+  trends <-
+    trends %>%
+    group_by(date, geo) %>%
+    summarize(hits = mean(hits)) %>%
+    mutate(keywords = paste(terms, collapse=",")) %>% 
+    ungroup()
+
+  
   # Iterates over date intervals
-  for (i in 2:length(dates_list)){
+  for (i in 2:length(dates_list)) {
     
     # Grabs trends data for specified time range, location, and search terms
     trend <- 
       gtrends(keyword = terms, geo = locations, time = dates_list[[i]][[1]])[[1]] %>% 
       as.tibble()
+  
+      
+    trend <- 
+      trend %>% 
+      group_by(date, geo) %>% 
+      summarize(hits = mean(hits)) %>% 
+      mutate(keywords = paste(terms, collapse=";")) %>% 
+      ungroup()
+
     
     # Calculates mean hits of older side left side of trends data for overlapping dates
     mean_old <-
@@ -66,7 +84,7 @@ concat_trends <- function(dates_list, terms, locations, rescale_robin_williams=F
       pull()
     
     # Scales trends data by adjusting entire time period by ratio of means in overlapping dates
-    if (mean_old > mean_new){
+    if (mean_old > mean_new) {
       trends <-
         trends %>%
         mutate(hits = hits*mean_new/mean_old)
@@ -90,47 +108,24 @@ concat_trends <- function(dates_list, terms, locations, rescale_robin_williams=F
   # Merges overlapping date regions, dropping irrelevant/temporary columns
   trends <- 
     trends %>% 
-    group_by(date, keyword, geo) %>% 
+    group_by(date, keywords, geo) %>% 
     summarise(hits = mean(hits)) %>% 
     ungroup()
     
   
   # If rescale_robin_williams=TRUE, naively rescales trends by...
   # Correcting for Robin Williams-related searches the day following his death (2018-08-12)
-  if (rescale_robin_williams){
-    trends_RW <- trends
+  if (rescale_robin_williams) {
     
-    # Corrects for day of death
-    RobWilliams1 <- 
-      trends %>%
-      filter(date >= ymd("2014-08-07") & date <= ymd("2014-08-17")) %>% 
-      filter(date != ymd("2014-08-12")) %>% 
-      summarize(mean = mean(hits)) %>% 
-      pull()
+    # Used even-weight 7-day window for rolling mean correction for 1 week before and after day of death
+    trends_RW <-
+      trends %>% 
+      mutate(moving_average = roll_mean(hits, 7, align = "center", fill = 0)) %>% 
+      mutate(hits = case_when(date > ymd("2014-08-04") & date < ymd("2014-08-19") ~ moving_average,
+                              TRUE ~ hits)) %>% 
+      select(-moving_average)
     
-    trends_RW[trends$date == ymd("2014-08-12"), "hits"] <- RobWilliams1
-    
-    # Corrects for day after death
-    RobWilliams2 <- 
-      trends %>%
-      filter(date >= ymd("2014-08-08") & date <= ymd("2014-08-18")) %>% 
-      filter(date != ymd("2014-08-13")) %>% 
-      summarize(mean = mean(hits)) %>% 
-      pull()
-    
-    trends_RW[trends$date == ymd("2014-08-13"), "hits"] <- RobWilliams2
-    
-    # Corrects for 2 days after death
-    RobWilliams3 <- 
-      trends %>%
-      filter(date >= ymd("2014-08-09") & date <= ymd("2014-08-19")) %>% 
-      filter(date != ymd("2014-08-14")) %>% 
-      summarize(mean = mean(hits)) %>% 
-      pull()
-    
-    trends_RW[trends$date == ymd("2014-08-14"), "hits"] <- RobWilliams3
-    
-    
+
     # Rescale trends to 100
     trends_max <-
       trends_RW %>%
@@ -142,11 +137,13 @@ concat_trends <- function(dates_list, terms, locations, rescale_robin_williams=F
       mutate(hits = hits*100/trends_max)
     
     # Return rescaled trends
-    return(trends_rescale)
+    trends_rescale
     
   } else {
+    
     # Otherwise, return original tibble
-    return(trends)
+    trends
+    
   }
   
 }
